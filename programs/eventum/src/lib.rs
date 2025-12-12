@@ -19,4 +19,9 @@ pub mod eventum {
         instructions::initialize_market::handler(ctx,  unique_market_id ,end_time , fee , question)?;
         Ok(())
     }
+
+    pub fn add_liquidity(ctx: Context<AddLiquidity> , unique_market_id: u64 , amount : u64 ) -> Result<()> {
+        instructions::add_liquidity::handler(ctx,unique_market_id ,  amount )?;
+        Ok(())
+    }
 }

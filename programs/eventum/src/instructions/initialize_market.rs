@@ -1,10 +1,14 @@
 use anchor_lang::{prelude::*, solana_program::clock::{self, UnixTimestamp}};
-use crate::states::{Market};
+use anchor_spl::token::{Mint, Token};
+use crate::states::Market;
 use crate::InitSpace;
 
 #[derive(Accounts)]
 #[instruction(unique_market_id: u64)]
 pub struct InitializeMarket<'info>{
+    #[account(mut)]
+    pub creater : Signer<'info> ,
+
     #[account(
         init , 
         payer = creater ,
@@ -12,16 +16,26 @@ pub struct InitializeMarket<'info>{
         space = 8 + Market::INIT_SPACE ,
         bump 
     )]
-    pub initialize_market : Account<'info ,Market> ,
+    pub market : Account<'info ,Market> ,
 
-    #[account(mut)]
-    pub creater : Signer<'info> ,
-    pub system_program : Program<'info , System>
+    #[account(
+        init,
+        payer = creater,
+        mint::authority = market,
+        mint::decimals = 9,
+        seeds = [b"lp_token", market.key().as_ref()],
+        bump,
+    )]
+    pub lp_mint : Account<'info , Mint> ,
+
+    pub system_program : Program<'info , System> , 
+    pub token_program : Program<'info , Token>
 }
 
 pub fn handler(ctx : Context<InitializeMarket> , unique_market_id : u64  , end_time : i64 , fee : u32 , question : String )->Result<()>{
-    let market = &mut ctx.accounts.initialize_market ;
+    let market = &mut ctx.accounts.market ;
 
+    market.lp_mint = ctx.accounts.lp_mint.key() ;
     market.creater = ctx.accounts.creater.key() ;
     market.oracle_authority = ctx.accounts.creater.key() ;
     market.unique_market_id = unique_market_id ;
@@ -29,7 +43,10 @@ pub fn handler(ctx : Context<InitializeMarket> , unique_market_id : u64  , end_t
     market.end_time = end_time ;
     market.resolved = false ;
     market.question = question ;
-    market.fee = 500 ;    // bps 
-    market.bump = ctx.bumps.initialize_market ;
+    market.fee = fee ;    // bps 
+    market.bump = ctx.bumps.market ;
+    market.vault_bump = 0 ;
+    market.total_liquidity = 0 ;
+    market.total_lp_supply = 0 ;
     Ok(())
 }

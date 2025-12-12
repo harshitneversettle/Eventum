@@ -14,8 +14,15 @@ cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
-idl-build = ["anchor-lang/idl-build"]
+
+# Source - https://stackoverflow.com/a
+# Posted by dev4all.sol, modified by community. See post 'Timeline' for change history
+# Retrieved 2025-12-11, License - CC BY-SA 4.0
+
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
 
 
 [dependencies]
 anchor-lang = { version = "0.31.1" }
+anchor-spl  = "0.31.1"        

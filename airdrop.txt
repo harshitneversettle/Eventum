@@ -1,0 +1,9 @@
+solana airdrop 1000 7zJKWL1qBYYExf23hRrcojrWVZJcpEg4tSQNFmqJJFm9
+solana airdrop 1000 mwcfgyGrw3N36bEVMZFJzWQkidk2hLjGAZmf2m91QWC
+anchor test --skip-local-validator 
+
+
+
+
+
+spl-token accounts --owner 7zJKWL1qBYYExf23hRrcojrWVZJcpEg4tSQNFmqJJFm9 -ul
