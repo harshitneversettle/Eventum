@@ -8,6 +8,8 @@ pub mod instructions;
 pub mod states;
 
 use instructions::*;
+pub mod error; 
+use error::ErrorCode;
 
 #[program]
 pub mod eventum {

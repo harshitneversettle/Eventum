@@ -184,4 +184,8 @@ describe("eventum", () => {
     ); 
   });
 
+  it("buy outcomes", async () => {
+    
+  });
+
 });

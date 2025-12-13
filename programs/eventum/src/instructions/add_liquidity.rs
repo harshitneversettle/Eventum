@@ -63,6 +63,11 @@ pub fn handler(ctx : Context<AddLiquidity> , unique_market_id: u64 , amount : u6
         to : ctx.accounts.pool_vault.to_account_info() ,
     };
 
+    if market.total_liquidity == 0 {
+        let temp = amount_lamports.checked_div(2).expect("LOL") ;
+        market.yes_pool = temp ;
+        market.no_pool = temp ;
+    }
     let cpi_ctx = CpiContext::new(ctx.accounts.system_program.to_account_info(), transfer_accounts) ;
     system_program::transfer(cpi_ctx, amount_lamports)?;
 
@@ -98,6 +103,7 @@ pub fn handler(ctx : Context<AddLiquidity> , unique_market_id: u64 , amount : u6
     market.total_liquidity = market.total_liquidity.checked_add(amount_lamports).expect("Overflow") ;
     market.total_lp_supply = market.total_lp_supply.checked_add(number_of_tokens).expect("Overflow") ;
     market.vault_bump = ctx.bumps.pool_vault ;
+    
 
     Ok(())
 }

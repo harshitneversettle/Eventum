@@ -28,6 +28,26 @@ pub struct InitializeMarket<'info>{
     )]
     pub lp_mint : Account<'info , Mint> ,
 
+    #[account(
+        init ,
+        payer = creater ,
+        mint::authority = market ,
+        mint::decimals = 9 ,
+        seeds = [b"yes_mint" , market.key().as_ref()] ,
+        bump ,
+    )]
+    pub yes_mint : Account<'info , Mint> ,
+
+    #[account(
+        init ,
+        payer = creater ,
+        mint::authority = market ,
+        mint::decimals = 9 ,
+        seeds = [b"no_mint" , market.key().as_ref()] ,
+        bump ,
+    )]
+    pub no_mint : Account<'info , Mint> ,
+
     pub system_program : Program<'info , System> , 
     pub token_program : Program<'info , Token>
 }
@@ -48,5 +68,12 @@ pub fn handler(ctx : Context<InitializeMarket> , unique_market_id : u64  , end_t
     market.vault_bump = 0 ;
     market.total_liquidity = 0 ;
     market.total_lp_supply = 0 ;
+    market.is_active = true ;
+    market.yes_mint = ctx.accounts.yes_mint.key() ;
+    market.no_mint = ctx.accounts.no_mint.key() ;
+    market.yes_tokens = 0 ;
+    market.no_tokens = 0 ;
+    market.yes_pool = 0 ;
+    market.no_pool = 0 ;
     Ok(())
 }

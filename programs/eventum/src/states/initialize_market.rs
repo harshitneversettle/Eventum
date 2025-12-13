@@ -20,5 +20,12 @@ pub struct Market{
     pub fee : u32 ,
     pub total_liquidity: u64,   
     pub total_lp_supply: u64,
+    pub yes_mint : Pubkey ,
+    pub no_mint : Pubkey ,
+    pub is_active : bool ,
+    pub yes_tokens : u64 ,
+    pub no_tokens : u64 ,
+    pub yes_pool : u64 ,
+    pub no_pool : u64 ,
     pub bump : u8 ,
 }
