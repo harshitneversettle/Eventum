@@ -26,4 +26,9 @@ pub mod eventum {
         instructions::add_liquidity::handler(ctx,unique_market_id ,  amount )?;
         Ok(())
     }
+
+    pub fn buy_outcomes(ctx: Context<BuyOutcomes> , unique_market_id: u64 , number_of_tokens : u64 , yes : bool ) -> Result<()> {
+        instructions::buy_outcomes::handler(ctx,unique_market_id ,  number_of_tokens , yes )?;
+        Ok(())
+    }
 }

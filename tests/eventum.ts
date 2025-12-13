@@ -16,6 +16,7 @@ import {
 } from "@solana/spl-token";
 import { BN } from "bn.js";
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
+import { use } from "chai";
 
 describe("eventum", () => {
   const connection = new anchor.web3.Connection(
@@ -138,11 +139,10 @@ describe("eventum", () => {
       lp.publicKey
     );
 
-  
     await program.methods
       .addLiquidity(new anchor.BN(unique_market_id), new anchor.BN(amount))
       .accounts({
-        lp: lp.publicKey, 
+        lp: lp.publicKey,
         market: marketPda,
         poolVault: vaultPda,
         lpMint: marketState.lpMint,
@@ -153,8 +153,8 @@ describe("eventum", () => {
       })
       .signers([lp])
       .rpc();
-      
-      await new Promise((resolve) => setTimeout(resolve, 500));
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     const lpBalanceAfter = await connection.getBalance(lp.publicKey);
     const vaultBalanceAfter = await connection.getBalance(vaultPda);
@@ -181,11 +181,114 @@ describe("eventum", () => {
     console.log(
       "Total liquidity =",
       Number(updatedMarket.totalLiquidity) / 1e9
-    ); 
+    );
   });
 
   it("buy outcomes", async () => {
-    
-  });
+    let creater = HARSHIT_KEYPAIR;
+    let user = TEST_KEYPAIR;
+    let marketPda: PublicKey;
+    let bump: number;
+    let yesMint: PublicKey;
+    let noMint: PublicKey;
+    let poolVaultPda: PublicKey;
+    let userYesAta: PublicKey;
+    let userNoAta: PublicKey;
+    let unique_market_id = 1104;
 
+    const uniqueIdBuf = new anchor.BN(unique_market_id).toArrayLike(
+      Buffer,
+      "le",
+      8
+    );
+
+    [marketPda, bump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("Market"), creater.publicKey.toBuffer(), uniqueIdBuf],
+      program.programId
+    );
+
+    [poolVaultPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), marketPda.toBuffer()],
+      program.programId
+    );
+
+   
+    console.log("\nBEFORE Trade:");
+
+    let marketState = await program.account.market.fetch(marketPda);
+    yesMint = marketState.yesMint;
+    noMint = marketState.noMint;
+
+    console.log("YES Pool:", marketState.yesPool.toNumber() / 1e9, "SOL");
+    console.log("NO Pool:", marketState.noPool.toNumber() / 1e9, "SOL");
+    console.log(
+      "k:",
+      (marketState.yesPool.toNumber() * marketState.noPool.toNumber()) / 1e18
+    );
+
+    let yesATA = await getOrCreateAssociatedTokenAccount(
+      connection,
+      user,
+      yesMint,
+      user.publicKey
+    );
+
+    let noATA = await getOrCreateAssociatedTokenAccount(
+      connection,
+      user,
+      noMint,
+      user.publicKey
+    );
+
+    userYesAta = yesATA.address;
+    userNoAta = noATA.address;
+
+    let number_of_token = 10;
+    let yes = true;
+
+    console.log(
+      "\nExecuting: Buy",
+      number_of_token,
+      "SOL worth of",
+      yes ? "YES" : "NO",
+      "tokens"
+    );
+
+    const tx = await program.methods
+      .buyOutcomes(
+        new anchor.BN(unique_market_id),
+        new anchor.BN(number_of_token),
+        yes
+      )
+      .accounts({
+        creater: creater.publicKey,
+        user: user.publicKey,
+        market: marketPda,
+        yesMint,
+        noMint,
+        poolVault: poolVaultPda,
+        userYesAta,
+        userNoAta,
+      })
+      .signers([user])
+      .rpc();
+
+    console.log("Transaction:", tx);
+
+    await connection.confirmTransaction(tx);
+
+    console.log("\nAFTER Trade:");
+    const marketStateAfter = await program.account.market.fetch(marketPda);
+    console.log("YES Pool:", marketStateAfter.yesPool.toNumber() / 1e9, "SOL");
+    console.log("NO Pool:", marketStateAfter.noPool.toNumber() / 1e9, "SOL");
+    console.log(
+      "k:",
+      (marketStateAfter.yesPool.toNumber() *
+        marketStateAfter.noPool.toNumber()) /
+        1e18
+    );
+
+    const userTokens = await connection.getTokenAccountBalance(userYesAta);
+    console.log("\nUser received:", userTokens.value.uiAmount, "YES tokens");
+  });
 });
