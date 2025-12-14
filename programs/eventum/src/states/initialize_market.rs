@@ -14,6 +14,7 @@ pub struct Market{
     pub start_time : i64 ,
     pub end_time : i64 ,
     pub resolved : bool ,
+    pub winning_outcome : bool ,
     #[max_len(100)]
     pub question : String ,
     pub vault_bump : u8 ,

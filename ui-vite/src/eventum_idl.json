@@ -117,6 +117,154 @@
       ]
     },
     {
+      "name": "buy_outcomes",
+      "discriminator": [89, 197, 131, 123, 76, 230, 169, 84],
+      "accounts": [
+        {
+          "name": "creater"
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "market",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [77, 97, 114, 107, 101, 116]
+              },
+              {
+                "kind": "account",
+                "path": "creater"
+              },
+              {
+                "kind": "arg",
+                "path": "unique_market_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "yes_mint",
+          "writable": true
+        },
+        {
+          "name": "no_mint",
+          "writable": true
+        },
+        {
+          "name": "pool_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [118, 97, 117, 108, 116]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_yes_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
+                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
+                  245, 133, 126, 255, 0, 169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "yes_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
+              ]
+            }
+          }
+        },
+        {
+          "name": "user_no_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
+                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
+                  245, 133, 126, 255, 0, 169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "no_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89
+              ]
+            }
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        }
+      ],
+      "args": [
+        {
+          "name": "unique_market_id",
+          "type": "u64"
+        },
+        {
+          "name": "number_of_tokens",
+          "type": "u64"
+        },
+        {
+          "name": "yes",
+          "type": "bool"
+        }
+      ]
+    },
+    {
       "name": "initialize_market",
       "discriminator": [35, 35, 189, 193, 155, 48, 170, 203],
       "accounts": [
@@ -162,6 +310,38 @@
           }
         },
         {
+          "name": "yes_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [121, 101, 115, 95, 109, 105, 110, 116]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
+          "name": "no_mint",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [110, 111, 95, 109, 105, 110, 116]
+              },
+              {
+                "kind": "account",
+                "path": "market"
+              }
+            ]
+          }
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
@@ -194,6 +374,173 @@
     {
       "name": "Market",
       "discriminator": [219, 190, 213, 55, 0, 227, 198, 154]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "DuplicateMarketId",
+      "msg": "Market ID must be unique"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidDuration",
+      "msg": "Invalid market duration"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidEndTime",
+      "msg": "Market end time must be in the future"
+    },
+    {
+      "code": 6003,
+      "name": "NoLiquidity",
+      "msg": "Market has no liquidity. Add liquidity before trading."
+    },
+    {
+      "code": 6004,
+      "name": "InsufficientLiquidity",
+      "msg": "Insufficient liquidity for this trade"
+    },
+    {
+      "code": 6005,
+      "name": "ExcessiveLiquidityRemoval",
+      "msg": "Cannot remove more liquidity than provided"
+    },
+    {
+      "code": 6006,
+      "name": "NoLPTokens",
+      "msg": "No LP tokens to burn"
+    },
+    {
+      "code": 6007,
+      "name": "MarketNotActive",
+      "msg": "Market is not active. Trading is disabled."
+    },
+    {
+      "code": 6008,
+      "name": "MarketResolved",
+      "msg": "Market is already resolved. Cannot trade on settled markets."
+    },
+    {
+      "code": 6009,
+      "name": "MarketExpired",
+      "msg": "Market has expired. Cannot trade after end time."
+    },
+    {
+      "code": 6010,
+      "name": "InvalidOutcome",
+      "msg": "Invalid outcome selection. Must be YES or NO."
+    },
+    {
+      "code": 6011,
+      "name": "SlippageExceeded",
+      "msg": "Slippage tolerance exceeded. Price moved unfavorably."
+    },
+    {
+      "code": 6012,
+      "name": "AmountTooSmall",
+      "msg": "Trade amount too small. Minimum amount not met."
+    },
+    {
+      "code": 6013,
+      "name": "AmountTooLarge",
+      "msg": "Trade amount too large. Exceeds maximum limit."
+    },
+    {
+      "code": 6014,
+      "name": "InsufficientTokens",
+      "msg": "Insufficient token balance for this operation"
+    },
+    {
+      "code": 6015,
+      "name": "ZeroTokenMint",
+      "msg": "Cannot mint zero tokens"
+    },
+    {
+      "code": 6016,
+      "name": "ZeroTokenBurn",
+      "msg": "Cannot burn zero tokens"
+    },
+    {
+      "code": 6017,
+      "name": "MathOverflow",
+      "msg": "Mathematical overflow occurred"
+    },
+    {
+      "code": 6018,
+      "name": "DivisionByZero",
+      "msg": "Division by zero"
+    },
+    {
+      "code": 6019,
+      "name": "InvalidCalculation",
+      "msg": "Invalid calculation result"
+    },
+    {
+      "code": 6020,
+      "name": "MarketNotExpired",
+      "msg": "Market has not expired yet. Cannot resolve."
+    },
+    {
+      "code": 6021,
+      "name": "AlreadyResolved",
+      "msg": "Market is already resolved"
+    },
+    {
+      "code": 6022,
+      "name": "InvalidOracleData",
+      "msg": "Invalid oracle data"
+    },
+    {
+      "code": 6023,
+      "name": "UnauthorizedResolver",
+      "msg": "Unauthorized resolver. Only creator can resolve."
+    },
+    {
+      "code": 6024,
+      "name": "NoWinnings",
+      "msg": "No winnings to claim"
+    },
+    {
+      "code": 6025,
+      "name": "MarketNotResolved",
+      "msg": "Market not resolved yet. Cannot claim winnings."
+    },
+    {
+      "code": 6026,
+      "name": "AlreadyClaimed",
+      "msg": "Already claimed winnings"
+    },
+    {
+      "code": 6027,
+      "name": "NotWinner",
+      "msg": "User did not bet on winning outcome"
+    },
+    {
+      "code": 6028,
+      "name": "Unauthorized",
+      "msg": "Unauthorized action. Only creator allowed."
+    },
+    {
+      "code": 6029,
+      "name": "InvalidSigner",
+      "msg": "Invalid signer"
+    },
+    {
+      "code": 6030,
+      "name": "InvalidMarket",
+      "msg": "Invalid market account"
+    },
+    {
+      "code": 6031,
+      "name": "InvalidVault",
+      "msg": "Invalid vault account"
+    },
+    {
+      "code": 6032,
+      "name": "AccountNotInitialized",
+      "msg": "Account not initialized"
     }
   ],
   "types": [
@@ -248,6 +595,34 @@
           },
           {
             "name": "total_lp_supply",
+            "type": "u64"
+          },
+          {
+            "name": "yes_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "no_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
+          },
+          {
+            "name": "yes_tokens",
+            "type": "u64"
+          },
+          {
+            "name": "no_tokens",
+            "type": "u64"
+          },
+          {
+            "name": "yes_pool",
+            "type": "u64"
+          },
+          {
+            "name": "no_pool",
             "type": "u64"
           },
           {

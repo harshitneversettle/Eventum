@@ -7,6 +7,9 @@ pub enum ErrorCode {
   
     #[msg("Market ID must be unique")]
     DuplicateMarketId,
+
+    #[msg("oracle authority doesnot matched ")]
+    OracleNotMatched ,
     
     #[msg("Invalid market duration")]
     InvalidDuration,

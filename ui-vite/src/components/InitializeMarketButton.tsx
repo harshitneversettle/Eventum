@@ -1,21 +1,53 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as anchor from "@coral-xyz/anchor";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { useEventumProgram } from "../useEventumProgram";
 
-export function InitializeMarketButton() {
+export function InitializeMarket() {
   const wallet = useAnchorWallet();
-  const program = useEventumProgram();
+  const { program } = useEventumProgram();
 
   const [loading, setLoading] = useState(false);
   const [txSig, setTxSig] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [marketData, setMarketData] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const uniqueMarketId = new anchor.BN(1104);
-  const endTime = new anchor.BN(Math.floor(Date.now() / 1000) + 3600);
-  const fee = 100;
-  const question = "Will Virat Kohli hit a century today ??";
+  const [marketId, setMarketId] = useState("");
+  const [question, setQuestion] = useState("");
+  const [fee, setFee] = useState("100");
+  const [endDate, setEndDate] = useState("");
+
+  const fetchMarketData = async () => {
+    if (!wallet || !program || !marketId) return;
+
+    setRefreshing(true);
+    try {
+      const uniqueMarketId = new anchor.BN(marketId);
+      const uniqueMarketIdBuf = uniqueMarketId.toArrayLike(Buffer, "le", 8);
+      const [marketPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("Market"), wallet.publicKey.toBuffer(), uniqueMarketIdBuf],
+        program.programId
+      );
+
+      const market = await program.account.market.fetch(marketPda);
+      setMarketData(market);
+      setError(null);
+    } catch (e: any) {
+      if (e.message?.includes("Account does not exist")) {
+        setMarketData(null);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (program && wallet && marketId) {
+      fetchMarketData();
+    }
+  }, [program, wallet, marketId]);
 
   const handleClick = async () => {
     try {
@@ -31,32 +63,28 @@ export function InitializeMarketButton() {
         return;
       }
 
-      const uniqueMarketIdBuf = uniqueMarketId.toArrayLike(Buffer, "le", 8);
+      if (!marketId || !question || !fee || !endDate) {
+        setError("Please fill in all fields");
+        return;
+      }
 
-      const [marketPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("Market"), wallet.publicKey.toBuffer(), uniqueMarketIdBuf],
-        program.programId
+      const uniqueMarketId = new anchor.BN(marketId);
+      const endTime = new anchor.BN(
+        Math.floor(new Date(endDate).getTime() / 1000)
       );
-
-      const [lpMintPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("lp_token"), marketPda.toBuffer()],
-        program.programId
-      );
+      const feeBps = parseInt(fee);
 
       setLoading(true);
 
       const sig = await program.methods
-        .initializeMarket(uniqueMarketId, endTime, fee, question)
+        .initializeMarket(uniqueMarketId, question, feeBps, endTime)
         .accounts({
           creater: wallet.publicKey,
-          market: marketPda,
-          lpMint: lpMintPda,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          tokenProgram: anchor.utils.token.TOKEN_PROGRAM_ID,
         })
         .rpc();
 
       setTxSig(sig);
+      await fetchMarketData();
     } catch (e: any) {
       console.error(e);
       setError(e.message ?? "Transaction failed");
@@ -66,69 +94,160 @@ export function InitializeMarketButton() {
   };
 
   return (
-    <div className="mt-4 w-full max-w-xl rounded-2xl border border-slate-800 bg-neutral-950 px-5 py-5 text-slate-50 shadow-md backdrop-blur">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold tracking-tight">
-          Initialize market
-        </h2>
-        <p className="mt-1 text-sm text-slate-300">
-          Create the market account and LP mint for this wallet and market ID.
-          Run this once before anyone adds liquidity.
-        </p>
-      </div>
+    <div className="w-full max-w-xl">
+      <div className="rounded-lg border border-slate-700 bg-slate-900 p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-slate-100">
+            Initialize Market
+          </h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Create a new prediction market
+          </p>
+        </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
-        <div className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
-          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Market ID
+        {marketData && (
+          <div className="mb-6 p-4 rounded border border-slate-700 bg-slate-800">
+            <div className="mb-3 text-xs font-semibold uppercase text-slate-400">
+              Market Stats
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div>
+                <span className="text-slate-400">YES Pool:</span>
+                <span className="ml-2 text-slate-100 font-mono">
+                  {(marketData.yesPool.toNumber() / 1e9).toFixed(2)}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400">NO Pool:</span>
+                <span className="ml-2 text-slate-100 font-mono">
+                  {(marketData.noPool.toNumber() / 1e9).toFixed(2)}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400">Total Liquidity:</span>
+                <span className="ml-2 text-slate-100 font-mono">
+                  {(marketData.totalLiquidity.toNumber() / 1e9).toFixed(2)}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-400">Status:</span>
+                <span
+                  className={`ml-2 font-semibold ${
+                    marketData.isActive ? "text-green-400" : "text-red-400"
+                  }`}
+                >
+                  {marketData.isActive ? "Active" : "Inactive"}
+                </span>
+              </div>
+            </div>
+            <p className="text-slate-300 text-sm">{marketData.question}</p>
           </div>
-          <div className="font-mono text-base text-slate-100">
-            {uniqueMarketId.toString()}
-          </div>
-        </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
-          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Fee (bps)
-          </div>
-          <div className="font-mono text-base text-emerald-300">{fee}</div>
-        </div>
-        <div className="col-span-2 rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
-          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Question
-          </div>
-          <div className="text-sm leading-snug text-slate-100">{question}</div>
-        </div>
-      </div>
+        )}
 
-      <button
-        onClick={handleClick}
-        disabled={loading || !wallet || !program}
-        className={`flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition
-          ${
-            loading || !wallet || !program
-              ? "cursor-not-allowed border border-emerald-800 bg-emerald-900/60 text-emerald-100/70"
-              : "border border-emerald-500 bg-emerald-500 text-slate-950 hover:bg-emerald-400 hover:border-emerald-400"
+        {!marketData && (
+          <div className="space-y-4 mb-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-slate-300 mb-2">
+                  Market ID
+                </label>
+                <input
+                  type="number"
+                  value={marketId}
+                  onChange={(e) => setMarketId(e.target.value)}
+                  placeholder="1104"
+                  className="w-full px-4 py-2 rounded border border-slate-600 bg-slate-800 text-slate-100 font-mono focus:outline-none focus:border-slate-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-300 mb-2">
+                  Fee (bps)
+                </label>
+                <input
+                  type="number"
+                  value={fee}
+                  onChange={(e) => setFee(e.target.value)}
+                  placeholder="100"
+                  className="w-full px-4 py-2 rounded border border-slate-600 bg-slate-800 text-slate-100 font-mono focus:outline-none focus:border-slate-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm text-slate-300 mb-2">
+                Question
+              </label>
+              <input
+                type="text"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="Will Bitcoin reach $100k?"
+                className="w-full px-4 py-2 rounded border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:border-slate-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-slate-300 mb-2">
+                End Date
+              </label>
+              <input
+                type="datetime-local"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-4 py-2 rounded border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:border-slate-500"
+              />
+            </div>
+          </div>
+        )}
+
+        {marketData && (
+          <div className="mb-6 space-y-3">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="p-3 rounded border border-slate-700 bg-slate-800">
+                <div className="text-xs text-slate-400 mb-1">Market ID</div>
+                <div className="font-mono text-slate-100">{marketId}</div>
+              </div>
+              <div className="p-3 rounded border border-slate-700 bg-slate-800">
+                <div className="text-xs text-slate-400 mb-1">Fee (bps)</div>
+                <div className="font-mono text-slate-100">
+                  {marketData.feeBps.toString()}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <p className="mb-4 text-sm text-red-400 bg-red-950/30 rounded px-3 py-2">
+            {error}
+          </p>
+        )}
+
+        <button
+          onClick={handleClick}
+          disabled={loading || !wallet || !program || !!marketData}
+          className={`w-full px-4 py-3 rounded font-medium ${
+            loading || !wallet || !program || !!marketData
+              ? "bg-slate-800 text-slate-500 cursor-not-allowed"
+              : "bg-green-600 text-white hover:bg-green-500"
           }`}
-      >
-        {loading ? "Initializing..." : "Initialize market"}
-      </button>
+        >
+          {marketData
+            ? "Market Already Initialized"
+            : loading
+            ? "Initializing..."
+            : "Initialize Market"}
+        </button>
 
-      {error && (
-        <p className="mt-3 break-words rounded-lg bg-rose-950/70 px-3 py-2 text-sm text-rose-300">
-          {error}
-        </p>
-      )}
-
-      {txSig && (
-        <div className="mt-3 rounded-xl border border-emerald-700 bg-emerald-950/40 px-4 py-3">
-          <div className="mb-1 text-sm font-medium text-emerald-300">
-            Transaction submitted
+        {txSig && (
+          <div className="mt-4 p-3 rounded bg-green-950/30 border border-green-700">
+            <p className="text-sm text-green-400 mb-1">Transaction submitted</p>
+            <div className="text-xs text-green-300 font-mono break-all">
+              {txSig}
+            </div>
           </div>
-          <div className="break-all font-mono text-xs text-emerald-100">
-            {txSig}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

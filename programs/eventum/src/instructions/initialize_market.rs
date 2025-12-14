@@ -62,6 +62,7 @@ pub fn handler(ctx : Context<InitializeMarket> , unique_market_id : u64  , end_t
     market.start_time = Clock::get()?.unix_timestamp ;
     market.end_time = end_time ;
     market.resolved = false ;
+    market.winning_outcome = false ;
     market.question = question ;
     market.fee = fee ;    // bps 
     market.bump = ctx.bumps.market ;

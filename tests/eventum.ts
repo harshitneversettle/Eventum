@@ -3,20 +3,12 @@ import { Program } from "@coral-xyz/anchor";
 import { Eventum } from "../target/types/eventum";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import fs from "fs";
-import { publicKey } from "@coral-xyz/anchor/dist/cjs/utils";
 import {
-  createMint,
-  getAccount,
   getOrCreateAssociatedTokenAccount,
-  getAssociatedTokenAddressSync,
-  createSyncNativeInstruction,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
-  mintTo,
 } from "@solana/spl-token";
-import { BN } from "bn.js";
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
-import { use } from "chai";
 
 describe("eventum", () => {
   const connection = new anchor.web3.Connection(
@@ -106,7 +98,6 @@ describe("eventum", () => {
     let creater = HARSHIT_KEYPAIR.publicKey;
     let unique_market_id = 1104;
     let amount = 120;
-
     const uniqueIdBuf = new anchor.BN(unique_market_id).toArrayLike(
       Buffer,
       "le",
@@ -121,12 +112,9 @@ describe("eventum", () => {
       [Buffer.from("vault"), marketPda.toBuffer()],
       program.programId
     );
-
     console.log("vault Address:", vaultPda.toString());
-
     const marketState = await program.account.market.fetch(marketPda);
     const lpBalanceBefore = await connection.getBalance(lp.publicKey);
-
     console.log(
       "LP SOL balance before:",
       (lpBalanceBefore / LAMPORTS_PER_SOL).toFixed(9)
@@ -184,6 +172,10 @@ describe("eventum", () => {
     );
   });
 
+
+
+
+
   it("buy outcomes", async () => {
     let creater = HARSHIT_KEYPAIR;
     let user = TEST_KEYPAIR;
@@ -206,13 +198,12 @@ describe("eventum", () => {
       [Buffer.from("Market"), creater.publicKey.toBuffer(), uniqueIdBuf],
       program.programId
     );
-
+    console.log("suvbhdvhued : ",marketPda.toString()) ;
     [poolVaultPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("vault"), marketPda.toBuffer()],
       program.programId
     );
 
-   
     console.log("\nBEFORE Trade:");
 
     let marketState = await program.account.market.fetch(marketPda);
@@ -290,5 +281,46 @@ describe("eventum", () => {
 
     const userTokens = await connection.getTokenAccountBalance(userYesAta);
     console.log("\nUser received:", userTokens.value.uiAmount, "YES tokens");
+  });
+
+
+
+
+
+
+
+  it("resolve market ", async () => {
+    let marketPda: PublicKey;
+    let bump: number;
+    let oracle_authority = HARSHIT_KEYPAIR.publicKey;
+    let creater = HARSHIT_KEYPAIR.publicKey;
+    let outcome = true ; // yes wins
+    let unique_market_id = 1104 ;
+
+    const uniqueIdBuf = new anchor.BN(unique_market_id).toArrayLike(
+      Buffer,
+      "le",
+      8
+    );
+
+    [marketPda, bump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("Market"), creater.toBuffer(), uniqueIdBuf],
+      program.programId
+    );
+
+    await program.methods
+      .resolveMarket(new anchor.BN(unique_market_id), outcome)
+      .accounts({
+        creater,
+        market: marketPda,
+        oracle_authority,
+      })
+      .signers([HARSHIT_KEYPAIR])
+      .rpc();
+
+    await new Promise(resolve => setTimeout(resolve , 3000)) ;
+    let marketState = await program.account.market.fetch(marketPda);
+    console.log("Resolved Status : ", marketState.resolved);
+    console.log("Winning outcome : ", marketState.winningOutcome);
   });
 });

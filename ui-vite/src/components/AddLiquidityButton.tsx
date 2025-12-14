@@ -1,4 +1,3 @@
-// src/components/AddLiquidityButton.tsx
 import { useEffect, useState } from "react";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
@@ -12,7 +11,7 @@ import * as anchor from "@coral-xyz/anchor";
 
 export function AddLiquidityButton() {
   const wallet = useAnchorWallet();
-  const program = useEventumProgram();
+  const { program } = useEventumProgram();
 
   const [loading, setLoading] = useState(false);
   const [txSig, setTxSig] = useState<string | null>(null);
@@ -21,68 +20,50 @@ export function AddLiquidityButton() {
 
   const [lpBalance, setLpBalance] = useState<number | null>(null);
   const [lpMintAddr, setLpMintAddr] = useState<PublicKey | null>(null);
+  const [marketData, setMarketData] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const uniqueMarketId = new anchor.BN(1104);
 
-  const fetchLpBalance = async () => {
-    if (!wallet || !program || !lpMintAddr) return;
+  const fetchMarketData = async () => {
+    if (!wallet || !program) return;
 
-    const connection = program.provider.connection;
-    const owner = wallet.publicKey;
+    setRefreshing(true);
+    try {
+      const connection = program.provider.connection;
+      const creater = wallet.publicKey;
+      const uniqueIdBuf = uniqueMarketId.toArrayLike(Buffer, "le", 8);
 
-    const lpAta = await anchor.utils.token.associatedAddress({
-      mint: lpMintAddr,
-      owner,
-    });
+      const [marketPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("Market"), creater.toBuffer(), uniqueIdBuf],
+        program.programId
+      );
 
-    const info = await connection.getAccountInfo(lpAta);
-    if (!info) {
-      setLpBalance(0);
-      return;
+      const marketState = await program.account.market.fetch(marketPda);
+      setMarketData(marketState);
+      setLpMintAddr(marketState.lpMint);
+
+      const ataAddress = await anchor.utils.token.associatedAddress({
+        mint: marketState.lpMint,
+        owner: creater,
+      });
+
+      const ataInfo = await connection.getAccountInfo(ataAddress);
+      if (!ataInfo) {
+        setLpBalance(0);
+      } else {
+        const bal = await connection.getTokenAccountBalance(ataAddress);
+        setLpBalance(bal.value.uiAmount ?? 0);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setRefreshing(false);
     }
-
-    const bal = await connection.getTokenAccountBalance(lpAta);
-    setLpBalance(bal.value.uiAmount ?? 0);
   };
 
-  // Load lpMint and balance once on mount / when wallet or program changes
   useEffect(() => {
-    const load = async () => {
-      try {
-        if (!wallet || !program) return;
-
-        const connection = program.provider.connection;
-        const creater = wallet.publicKey;
-
-        const uniqueIdBuf = uniqueMarketId.toArrayLike(Buffer, "le", 8);
-
-        const [marketPda] = PublicKey.findProgramAddressSync(
-          [Buffer.from("Market"), creater.toBuffer(), uniqueIdBuf],
-          program.programId
-        );
-
-        const marketState = await program.account.market.fetch(marketPda);
-        setLpMintAddr(marketState.lpMint);
-
-        const ataAddress = await anchor.utils.token.associatedAddress({
-          mint: marketState.lpMint,
-          owner: creater,
-        });
-
-        const ataInfo = await connection.getAccountInfo(ataAddress);
-        if (!ataInfo) {
-          setLpBalance(0);
-        } else {
-          const bal = await connection.getTokenAccountBalance(ataAddress);
-          setLpBalance(bal.value.uiAmount ?? 0);
-        }
-      } catch (e) {
-        console.error(e);
-        // do not surface as main error; just keep balance null
-      }
-    };
-
-    load();
+    fetchMarketData();
   }, [wallet, program, uniqueMarketId]);
 
   const handleClick = async () => {
@@ -133,7 +114,9 @@ export function AddLiquidityButton() {
         );
 
         const tx = new anchor.web3.Transaction().add(ix);
-        await program.provider.sendAndConfirm(tx);
+        if(tx != null ){
+          await program.provider.sendAndConfirm(tx);
+        }
       }
 
       const amount = new anchor.BN(parseInt(amountUi || "0", 10));
@@ -155,9 +138,8 @@ export function AddLiquidityButton() {
 
       setTxSig(sig);
 
-      // refresh LP balance after add
-      setLpMintAddr(marketState.lpMint);
-      await fetchLpBalance();
+      // Refresh after add
+      await fetchMarketData();
     } catch (e: any) {
       console.error(e);
       setError(e.message ?? "Transaction failed");
@@ -168,13 +150,60 @@ export function AddLiquidityButton() {
 
   return (
     <div className="mt-4 w-full max-w-xl rounded-2xl border border-slate-800 bg-neutral-950 px-5 py-5 text-slate-50 shadow-md backdrop-blur">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold tracking-tight">Add liquidity</h2>
-        <p className="mt-1 text-sm text-slate-300">
-          Deposit into the pool using the same wallet and market ID. You receive
-          LP tokens that represent your share of the pool.
-        </p>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">
+            Add liquidity
+          </h2>
+          <p className="mt-1 text-sm text-slate-300">
+            Deposit into the pool. You receive LP tokens.
+          </p>
+        </div>
+        {marketData && (
+          <button
+            onClick={fetchMarketData}
+            disabled={refreshing}
+            className="text-xs px-3 py-1.5 rounded-lg border border-blue-600 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 disabled:opacity-50"
+          >
+            {refreshing ? "..." : "🔄"}
+          </button>
+        )}
       </div>
+
+      {/* Market Stats */}
+      {marketData && (
+        <div className="mb-4 rounded-xl border border-blue-700 bg-blue-950/30 px-4 py-3">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-400">
+            📊 Pool Stats
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-emerald-400 font-semibold">YES Pool:</span>{" "}
+              <span className="font-mono text-slate-200">
+                {(marketData.yesPool.toNumber() / 1e9).toFixed(2)}
+              </span>
+            </div>
+            <div>
+              <span className="text-rose-400 font-semibold">NO Pool:</span>{" "}
+              <span className="font-mono text-slate-200">
+                {(marketData.noPool.toNumber() / 1e9).toFixed(2)}
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-400">Total Liquidity:</span>{" "}
+              <span className="font-mono text-slate-200">
+                {(marketData.totalLiquidity.toNumber() / 1e9).toFixed(2)}
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-400">Your LP Tokens:</span>{" "}
+              <span className="font-mono text-emerald-300">
+                {lpBalance ?? "—"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
         <div className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">

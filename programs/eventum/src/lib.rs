@@ -31,4 +31,9 @@ pub mod eventum {
         instructions::buy_outcomes::handler(ctx,unique_market_id ,  number_of_tokens , yes )?;
         Ok(())
     }
+
+    pub fn resolve_market(ctx: Context<ResolveMarket> , unique_market_id: u64 , outcome : bool  ) -> Result<()> {
+        instructions::resolve_market::handler(ctx , unique_market_id , outcome )?;
+        Ok(())
+    }
 }

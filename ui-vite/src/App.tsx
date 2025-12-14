@@ -2,13 +2,14 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { InitializeMarketButton } from "./components/InitializeMarketButton";
 import { AddLiquidityButton } from "./components/AddLiquidityButton";
+import BuyOutcome from "./components/BuyOutcome";
 
 function App() {
   const { publicKey } = useWallet();
 
   return (
     <div className="min-h-screen bg-black text-slate-50">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6">
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-semibold tracking-tight">Eventum</h1>
@@ -63,6 +64,28 @@ function App() {
             </div>
           </section>
         </main>
+
+        <section className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-4">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-slate-100">
+              Trade Outcomes
+            </h2>
+            <p className="mt-1 text-xs text-slate-400">
+              Buy YES or NO tokens based on your prediction. Trade using the AMM
+              pool.
+            </p>
+          </div>
+
+          {publicKey ? (
+            <BuyOutcome />
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-xs text-amber-400">
+                Connect a wallet to start trading.
+              </p>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
