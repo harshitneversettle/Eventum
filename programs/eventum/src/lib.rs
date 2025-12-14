@@ -1,7 +1,4 @@
 use anchor_lang::prelude::*;
-
-
-
 declare_id!("C2DH4MJnMgsLW9whA3bwqkApsLRu4yzvujX27e56L6qV");
 
 pub mod instructions;
@@ -34,6 +31,11 @@ pub mod eventum {
 
     pub fn resolve_market(ctx: Context<ResolveMarket> , unique_market_id: u64 , outcome : bool  ) -> Result<()> {
         instructions::resolve_market::handler(ctx , unique_market_id , outcome )?;
+        Ok(())
+    }
+
+    pub fn claim_winnings(ctx: Context<ClaimWinnings> , unique_market_id: u64  ) -> Result<()> {
+        instructions::claim_winnings::handler(ctx , unique_market_id )?;
         Ok(())
     }
 }

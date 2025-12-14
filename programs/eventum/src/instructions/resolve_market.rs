@@ -24,7 +24,9 @@ pub struct ResolveMarket<'info>{
     pub market : Account<'info , Market>,
 
     #[account(mut)]
-    pub oracle_authority : Signer<'info> 
+    pub oracle_authority : Signer<'info> ,
+    
+
 }
 
 pub fn handler(ctx : Context<ResolveMarket> , unique_market_id : u64 , outcome : bool )->Result<()>{

@@ -71,6 +71,7 @@ pub fn handler(ctx : Context<BuyOutcomes> , unique_market_id : u64 , amount : u6
     let creater = &ctx.accounts.creater.key() ;
     let pool_vault = &mut ctx.accounts.pool_vault ;
     let bump = market.bump ;
+        
 
     require!(
         market.total_liquidity > 0 && market.yes_pool > 0 && market.no_pool > 0 ,

@@ -91,9 +91,11 @@ describe("eventum", () => {
       new Date(marketAccount.endTime.toNumber() * 1000).toLocaleString()
     );
     console.log("fee :", marketAccount.fee);
+    
   });
 
   it("Add liquidity", async () => {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     let lp = HARSHIT_KEYPAIR;
     let creater = HARSHIT_KEYPAIR.publicKey;
     let unique_market_id = 1104;
@@ -172,11 +174,8 @@ describe("eventum", () => {
     );
   });
 
-
-
-
-
   it("buy outcomes", async () => {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     let creater = HARSHIT_KEYPAIR;
     let user = TEST_KEYPAIR;
     let marketPda: PublicKey;
@@ -198,7 +197,7 @@ describe("eventum", () => {
       [Buffer.from("Market"), creater.publicKey.toBuffer(), uniqueIdBuf],
       program.programId
     );
-    console.log("suvbhdvhued : ",marketPda.toString()) ;
+    console.log("suvbhdvhued : ", marketPda.toString());
     [poolVaultPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("vault"), marketPda.toBuffer()],
       program.programId
@@ -283,19 +282,14 @@ describe("eventum", () => {
     console.log("\nUser received:", userTokens.value.uiAmount, "YES tokens");
   });
 
-
-
-
-
-
-
   it("resolve market ", async () => {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     let marketPda: PublicKey;
     let bump: number;
     let oracle_authority = HARSHIT_KEYPAIR.publicKey;
     let creater = HARSHIT_KEYPAIR.publicKey;
-    let outcome = true ; // yes wins
-    let unique_market_id = 1104 ;
+    let outcome = true; // yes wins
+    let unique_market_id = 1104;
 
     const uniqueIdBuf = new anchor.BN(unique_market_id).toArrayLike(
       Buffer,
@@ -318,9 +312,94 @@ describe("eventum", () => {
       .signers([HARSHIT_KEYPAIR])
       .rpc();
 
-    await new Promise(resolve => setTimeout(resolve , 3000)) ;
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     let marketState = await program.account.market.fetch(marketPda);
     console.log("Resolved Status : ", marketState.resolved);
     console.log("Winning outcome : ", marketState.winningOutcome);
+  });
+
+  it("claim winnings", async () => {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    let marketPda: PublicKey;
+    let bump: number;
+    let creater = HARSHIT_KEYPAIR.publicKey;
+    let user = TEST_KEYPAIR;
+    let unique_market_id = 1104;
+
+    const uniqueIdBuf = new anchor.BN(unique_market_id).toArrayLike(
+      Buffer,
+      "le",
+      8
+    );
+
+    [marketPda, bump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("Market"), creater.toBuffer(), uniqueIdBuf],
+      program.programId
+    );
+
+    let [poolVaultPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vault"), marketPda.toBuffer()],
+      program.programId
+    );
+
+    let marketState = await program.account.market.fetch(marketPda);
+    let yesMint = marketState.yesMint;
+    let noMint = marketState.noMint;
+
+    let userYesAta = await getOrCreateAssociatedTokenAccount(
+      connection,
+      user,
+      yesMint,
+      user.publicKey
+    );
+
+    let userNoAta = await getOrCreateAssociatedTokenAccount(
+      connection,
+      user,
+      noMint,
+      user.publicKey
+    );
+
+    await program.methods
+      .claimWinnings(new anchor.BN(unique_market_id))
+      .accounts({
+        creater,
+        market: marketPda,
+        user: user.publicKey,
+        userYesAta: userYesAta.address,
+        userNoAta: userNoAta.address,
+        poolVault: poolVaultPda,
+        yesMint,
+        noMint,
+      })
+      .signers([TEST_KEYPAIR])
+      .rpc();
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    let userSolAfter = await connection.getBalance(user.publicKey);
+    let vaultBalanceAfter = await connection.getBalance(poolVaultPda);
+    let userYesTokensAfter = (
+      await connection.getTokenAccountBalance(userYesAta.address)
+    ).value.uiAmount;
+
+    console.log(
+      "User SOL after claim:",
+      (userSolAfter / LAMPORTS_PER_SOL).toFixed(9)
+    );
+    console.log(
+      "Vault balance after claim:",
+      (vaultBalanceAfter / LAMPORTS_PER_SOL).toFixed(9)
+    );
+    console.log(
+      "User YES tokens after claim:",
+      userYesTokensAfter,
+      "(should be 0 - burned)"
+    );
+
+    let marketStateAfter = await program.account.market.fetch(marketPda);
+    console.log(
+      "Total YES supply after claim:",
+      marketStateAfter.yesPool.toNumber() / 1e9
+    );
   });
 });
