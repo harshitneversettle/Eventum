@@ -360,6 +360,12 @@ describe("eventum", () => {
       user.publicKey
     );
 
+    let userSolBefore : number = await connection.getBalance(user.publicKey);
+    console.log(
+      "User SOL before claim:",
+      (userSolBefore / LAMPORTS_PER_SOL).toFixed(9)
+    );
+
     await program.methods
       .claimWinnings(new anchor.BN(unique_market_id))
       .accounts({

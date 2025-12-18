@@ -100,11 +100,7 @@ pub fn handler(ctx : Context<ClaimWinnings> , unique_market_id : u64)->Result<()
         let user_yes_tokens = ctx.accounts.user_yes_ata.amount ;
         let vault_balance = ctx.accounts.pool_vault.lamports();
         let total_yes_minted = market.yes_tokens ;
-        payout = (user_yes_tokens as u128)
-            .checked_mul(vault_balance as u128).unwrap()
-            .checked_div(total_yes_minted as u128).unwrap() as u64;
-
-
+        payout = user_yes_tokens ;
         let burn_accounts = Burn{
             mint : ctx.accounts.yes_mint.to_account_info() ,
             from : ctx.accounts.user_yes_ata.to_account_info() ,
@@ -117,9 +113,7 @@ pub fn handler(ctx : Context<ClaimWinnings> , unique_market_id : u64)->Result<()
         let user_no_tokens = ctx.accounts.user_no_ata.amount ;
         let vault_balance = ctx.accounts.pool_vault.lamports();
         let total_no_minted = market.no_tokens ;
-        payout = (user_no_tokens as u128)
-            .checked_mul(vault_balance as u128).unwrap()
-            .checked_div(total_no_minted as u128).unwrap() as u64;
+        payout = user_no_tokens ;
 
 
         let burn_accounts = Burn{
