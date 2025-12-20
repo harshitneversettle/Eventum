@@ -11,11 +11,11 @@ use crate::ErrorCode;
 #[instruction(unique_market_id : u64)]
 pub struct ClaimWinnings<'info>{
     /// CHECK: only fro seeds derivation 
-    pub creater : UncheckedAccount<'info> ,
+    pub creator : UncheckedAccount<'info> ,
 
     #[account(
         mut ,
-        seeds = [b"Market" , creater.key().as_ref() , &unique_market_id.to_le_bytes()] ,
+        seeds = [b"Market" , creator.key().as_ref() , &unique_market_id.to_le_bytes()] ,
         bump 
     )]
     pub market : Account<'info , Market> ,  
@@ -39,10 +39,10 @@ pub struct ClaimWinnings<'info>{
 
     #[account(
         mut,
-        seeds = [b"vault", market.key().as_ref()],
+        seeds = [b"market-vault", market.key().as_ref()],
         bump = market.vault_bump
     )]
-    pub pool_vault: SystemAccount<'info>,
+    pub vault : SystemAccount<'info>,
 
     #[account(
        mut ,
@@ -70,14 +70,14 @@ pub struct ClaimWinnings<'info>{
 
 pub fn handler(ctx : Context<ClaimWinnings> , unique_market_id : u64)->Result<()>{
     let market = &mut ctx.accounts.market ;
-    let creater = ctx.accounts.creater.key() ;
+    let creator = ctx.accounts.creator.key() ;
     let user = ctx.accounts.user.key() ;
     let yes_ata = &ctx.accounts.user_yes_ata ;
     let no_ata = &ctx.accounts.user_no_ata ;
     let outcome = market.winning_outcome ;  // bool 
     let yes_mint = &ctx.accounts.yes_mint ;
     let no_mint = &ctx.accounts.no_mint ;
-    let pool_vault = ctx.accounts.pool_vault.key() ;
+    let vault  = ctx.accounts.vault .key() ;
     let bump = market.bump ;
     let vault_bump= market.vault_bump ;
     let market_key = market.key() ;
@@ -89,7 +89,7 @@ pub fn handler(ctx : Context<ClaimWinnings> , unique_market_id : u64)->Result<()
 
     let signer_seeds : &[&[&[u8]]] = &[&[
         b"Market" ,
-        creater.as_ref() ,
+        creator.as_ref() ,
         &unique_market_id.to_le_bytes() ,
         &[bump] 
     ]] ;
@@ -98,7 +98,7 @@ pub fn handler(ctx : Context<ClaimWinnings> , unique_market_id : u64)->Result<()
     if outcome {    // means outcome == true ; i.e. outcome = yes 
         // burn all the yes tokens , calculate the payout , and transfer in the account
         let user_yes_tokens = ctx.accounts.user_yes_ata.amount ;
-        let vault_balance = ctx.accounts.pool_vault.lamports();
+        let vault_balance = ctx.accounts.vault .lamports();
         let total_yes_minted = market.yes_tokens ;
         payout = user_yes_tokens ;
         let burn_accounts = Burn{
@@ -111,10 +111,9 @@ pub fn handler(ctx : Context<ClaimWinnings> , unique_market_id : u64)->Result<()
         token::burn(cpi_ctx, user_yes_tokens)?;
     }else {   // else no wins 
         let user_no_tokens = ctx.accounts.user_no_ata.amount ;
-        let vault_balance = ctx.accounts.pool_vault.lamports();
+        let vault_balance = ctx.accounts.vault .lamports();
         let total_no_minted = market.no_tokens ;
         payout = user_no_tokens ;
-
 
         let burn_accounts = Burn{
             mint : ctx.accounts.no_mint.to_account_info() ,
@@ -128,11 +127,11 @@ pub fn handler(ctx : Context<ClaimWinnings> , unique_market_id : u64)->Result<()
 
     // transfer the payouts 
     let transfer_accounts = system_program::Transfer{
-        from : ctx.accounts.pool_vault.to_account_info() ,
+        from : ctx.accounts.vault .to_account_info() ,
         to : ctx.accounts.user.to_account_info() ,
     } ;
     let signer_seeds2 : &[&[&[u8]]] = &[&[
-        b"vault" ,
+        b"market-vault" ,
         market_key.as_ref() ,
         &[vault_bump] 
     ]] ;
