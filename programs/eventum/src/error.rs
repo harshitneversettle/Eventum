@@ -1,4 +1,3 @@
-// src/error.rs
 
 use anchor_lang::prelude::*;
 
@@ -8,6 +7,15 @@ pub enum ErrorCode {
     #[msg("Market ID must be unique")]
     DuplicateMarketId,
 
+    #[msg("insufficient balance")]
+    InsufficientBalance,
+
+    #[msg("check cost")]
+    InvalidCost,
+
+    #[msg("check cost")]
+    InvalidAmount,
+
     #[msg("oracle authority doesnot matched ")]
     OracleNotMatched ,
     
@@ -15,8 +23,10 @@ pub enum ErrorCode {
     InvalidDuration,
     
     #[msg("Market end time must be in the future")]
-    InvalidEndTime,
-    
+    InvalidEndTime ,
+
+    #[msg("NO balance")]
+    NoBalance ,
  
     #[msg("Market has no liquidity. Add liquidity before trading.")]
     NoLiquidity,
@@ -42,6 +52,10 @@ pub enum ErrorCode {
     
     #[msg("Invalid outcome selection. Must be YES or NO.")]
     InvalidOutcome,
+
+    #[msg("Invalid creator")]
+    InvalidCreator,
+    
     
     #[msg("Slippage tolerance exceeded. Price moved unfavorably.")]
     SlippageExceeded,
@@ -51,8 +65,7 @@ pub enum ErrorCode {
     
     #[msg("Trade amount too large. Exceeds maximum limit.")]
     AmountTooLarge,
-    
-    
+
     #[msg("Insufficient token balance for this operation")]
     InsufficientTokens,
     
@@ -71,7 +84,6 @@ pub enum ErrorCode {
     
     #[msg("Invalid calculation result")]
     InvalidCalculation,
-    
     
     #[msg("Market has not expired yet. Cannot resolve.")]
     MarketNotExpired,
@@ -114,4 +126,7 @@ pub enum ErrorCode {
     
     #[msg("Account not initialized")]
     AccountNotInitialized,
+
+    #[msg("check tokens supply")]
+    InvalidSupply,
 }

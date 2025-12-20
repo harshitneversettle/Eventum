@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-declare_id!("C2DH4MJnMgsLW9whA3bwqkApsLRu4yzvujX27e56L6qV");
+declare_id!("GppvioZ7AAwV14n7oM4B9fSndufUL4ZicevuYNfKUrbx");
 
 pub mod instructions;
 pub mod states;
@@ -19,10 +19,10 @@ pub mod eventum {
         Ok(())
     }
 
-    pub fn add_liquidity(ctx: Context<AddLiquidity> , unique_market_id: u64 , amount : u64 ) -> Result<()> {
-        instructions::add_liquidity::handler(ctx,unique_market_id ,  amount )?;
-        Ok(())
-    }
+    // pub fn add_liquidity(ctx: Context<AddLiquidity> , unique_market_id: u64 , amount : u64 ) -> Result<()> {
+    //     instructions::add_liquidity::handler(ctx,unique_market_id ,  amount )?;
+    //     Ok(())
+    // }
 
     pub fn buy_outcomes(ctx: Context<BuyOutcomes> , unique_market_id: u64 , number_of_tokens : u64 , yes : bool ) -> Result<()> {
         instructions::buy_outcomes::handler(ctx,unique_market_id ,  number_of_tokens , yes )?;

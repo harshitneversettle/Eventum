@@ -1,4 +1,5 @@
 use core::num;
+use std::marker;
 
 use anchor_lang::prelude::*;
 use anchor_lang::system_program::{transfer, Transfer as SystemTransfer};
@@ -73,6 +74,7 @@ pub fn handler(
     yes: bool
 ) -> Result<()> {
     require!(number_of_tokens > 0, ErrorCode::InvalidAmount);
+    let market = &ctx.accounts.market;
     
     let decimals = ctx.accounts.yes_mint.decimals; 
     let decimal_factor = 10_u64.pow(decimals as u32);
@@ -101,17 +103,17 @@ pub fn handler(
     };
     
     let after_lmsr = calculate_lmsr(b, after_yes, after_no, decimals)?;
-    
     let cost_diff = after_lmsr.checked_sub(before_lmsr)
         .ok_or(ErrorCode::MathOverflow)?;
-    
-    let to_pay = cost_diff.round()
+    let mut to_pay = cost_diff.round()
         .to_u64()
         .ok_or(ErrorCode::MathOverflow)?;
-    
+    let fee = market.fee as u64 ;
+    let fee_num = to_pay.checked_mul(fee).ok_or(ErrorCode::MathOverflow)?;
+    let market_cut = fee_num.checked_div(10000).ok_or(ErrorCode::MathOverflow)?;
+    to_pay = to_pay.checked_add(market_cut).ok_or(ErrorCode::MathOverflow)?;
     transfer_amount(&ctx, to_pay)?;
     mint_tokens(&ctx, tokens_with_decimals, yes, unique_market_id)?; 
-    
     Ok(())
 }
 

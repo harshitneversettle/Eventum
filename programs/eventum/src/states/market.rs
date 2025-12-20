@@ -7,8 +7,7 @@ use anchor_lang::prelude::*;
 
 
 pub struct Market{
-    pub creater : Pubkey ,
-    pub lp_mint : Pubkey ,
+    pub creator : Pubkey ,
     pub oracle_authority : Pubkey ,
     pub unique_market_id : u64 ,
     pub start_time : i64 ,
@@ -20,13 +19,9 @@ pub struct Market{
     pub vault_bump : u8 ,
     pub fee : u32 ,
     pub total_liquidity: u64,   
-    pub total_lp_supply: u64,
     pub yes_mint : Pubkey ,
     pub no_mint : Pubkey ,
-    pub is_active : bool ,
     pub yes_tokens : u64 ,
     pub no_tokens : u64 ,
-    pub yes_pool : u64 ,
-    pub no_pool : u64 ,
     pub bump : u8 ,
 }
